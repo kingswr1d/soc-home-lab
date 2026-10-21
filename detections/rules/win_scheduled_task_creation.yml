@@ -1,5 +1,5 @@
 title: Scheduled Task Creation via schtasks.exe or COM
-id: f3c4d5e6-a7b8-9012-cdef-345678901234
+id: fc24958a-e6e6-4ed4-aa61-8b8c2e547fa1
 status: test
 description: Detects creation of scheduled tasks via schtasks.exe or COM interface, used for persistence (MITRE T1053.005).
 author: SOC Lab Portfolio
@@ -8,7 +8,7 @@ modified: 2024-01-15
 tags:
   - attack.persistence
   - attack.t1053.005
-  - attack.privilege_escalation
+  - attack.privilege-escalation
 logsource:
   product: windows
   category: process_creation

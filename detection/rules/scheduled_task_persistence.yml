@@ -1,5 +1,5 @@
 title: Scheduled Task Creation for Persistence
-id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+id: 6998c3dd-a70b-43e6-b5a4-84302cdbdce6
 status: test
 description: Detects creation of scheduled tasks used for persistence, including suspicious task names, paths, and user contexts
 references:
@@ -11,7 +11,7 @@ modified: 2024-01-15
 tags:
     - attack.persistence
     - attack.t1053.005
-    - attack.privilege_escalation
+    - attack.privilege-escalation
 logsource:
     category: process_creation
     product: windows

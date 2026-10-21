@@ -1,37 +1,98 @@
-title: RDP Brute Force - Multiple Failed Logons Followed by Success
-id: d1a2b3c4-e5f6-7890-abcd-ef1234567890
+title: RDP Failed Logon (Event ID 4625, Logon Type 10)
+id: 114bdcdb-9201-41a9-acca-06f48cbfe9cb
+name: win_rdp_failed_logon
 status: test
-description: Detects RDP brute force attacks by identifying multiple Event ID 4625 (failed logon) with Logon Type 10 (RemoteInteractive) from the same source IP targeting the same account within a short timeframe, followed by a successful Event ID 4624 (successful logon) from the same IP.
-author: SOC Lab
+description: A single failed RDP logon. Building block for the correlation rules in this file.
+author: Kgosi Ntshingila
 date: 2026-06-18
+modified: 2026-10-21
 tags:
+  - attack.credential-access
   - attack.t1110.001
-  - attack.credential_access
-  - attack.initial_access
-  - detection.brute_force
-  - detection.rdp
 logsource:
   product: windows
   service: security
-  definition: 'Requirements: Security Event Log (Event IDs 4624, 4625). Logon Type 10 = RemoteInteractive (RDP).'
+  definition: 'Requirements: Security Event Log (Event ID 4625). Logon Type 10 = RemoteInteractive (RDP).'
 detection:
-  selection_failed:
+  selection:
     EventID: 4625
     LogonType: 10
-  selection_success:
+  condition: selection
+level: informational
+---
+title: RDP Successful Logon (Event ID 4624, Logon Type 10)
+id: f247416c-41df-487b-8fc7-c0e2b2874047
+name: win_rdp_successful_logon
+status: test
+description: A single successful RDP logon. Building block for the correlation rule below.
+author: Kgosi Ntshingila
+date: 2026-06-18
+modified: 2026-10-21
+tags:
+  - attack.initial-access
+  - attack.t1078
+logsource:
+  product: windows
+  service: security
+  definition: 'Requirements: Security Event Log (Event ID 4624). Logon Type 10 = RemoteInteractive (RDP).'
+detection:
+  selection:
     EventID: 4624
     LogonType: 10
-  timeframe: 5m
-  condition: selection_failed by SourceIp, TargetUserName | count() >= 5
-    and selection_success by SourceIp, TargetUserName | count() >= 1
-    within timeframe
+  condition: selection
+level: informational
+---
+title: RDP Brute Force Burst - 5+ Failed RDP Logons for One Account From One IP
+id: 4f045fb3-f1b4-417c-beb3-cb580f5614af
+name: win_rdp_failed_burst
+status: test
+description: Five or more failed RDP logons for the same account from the same IP within five minutes.
+author: Kgosi Ntshingila
+date: 2026-06-18
+modified: 2026-10-21
+tags:
+  - attack.credential-access
+  - attack.t1110.001
+correlation:
+  type: event_count
+  rules:
+    - win_rdp_failed_logon
+  group-by:
+    - IpAddress
+    - TargetUserName
+  timespan: 5m
+  condition:
+    gte: 5
+level: medium
+---
+title: RDP Brute Force Followed by Successful Logon
+id: f7690f27-006b-41e9-9a4f-7e094781d13e
+status: test
+description: >
+  A burst of 5+ failed RDP logons for one account from one IP, followed by a
+  successful RDP logon for the same account from the same IP within five
+  minutes. The attacker probably guessed the password: treat the account as
+  compromised.
+author: Kgosi Ntshingila
+date: 2026-06-18
+modified: 2026-10-21
+tags:
+  - attack.credential-access
+  - attack.t1110.001
+  - attack.initial-access
+  - attack.t1078
+correlation:
+  type: temporal_ordered
+  rules:
+    - win_rdp_failed_burst
+    - win_rdp_successful_logon
+  group-by:
+    - IpAddress
+    - TargetUserName
+  timespan: 5m
 falsepositives:
-  - Legitimate users mistyping passwords repeatedly
-  - Automated scripts/services with stale credentials
-  - Load balancer health checks (if logging as failed logons)
+  - A user who forgot their password, tried five times, then remembered it
 level: high
-mitre:
-  - T1110.001
 references:
   - https://attack.mitre.org/techniques/T1110/001/
   - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4625

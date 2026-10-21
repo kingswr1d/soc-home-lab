@@ -1,0 +1,1 @@
+(Image="*\\schtasks.exe" CommandLine="*/create*") OR (Image="*\\mmc.exe" CommandLine="*taskschd.msc*") OR (Image="*\\powershell.exe" CommandLine="*Register-ScheduledTask*" CommandLine="*-Action*") OR Image="*\\at.exe" | table EventCode,Image,CommandLine,ParentImage,User,ProcessId

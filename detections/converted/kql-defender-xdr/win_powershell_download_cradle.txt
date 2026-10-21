@@ -1,0 +1,2 @@
+DeviceProcessEvents
+| where (FolderPath endswith "\\powershell.exe" and (ProcessCommandLine contains "Invoke-WebRequest" and ProcessCommandLine contains "Invoke-Expression")) or (FolderPath endswith "\\powershell.exe" and (ProcessCommandLine contains "Net.WebClient" and ProcessCommandLine contains "DownloadString")) or (FolderPath endswith "\\powershell.exe" and ProcessCommandLine matches regex "IEX\\s*\\(.*(DownloadString|DownloadFile|OpenRead)") or (FolderPath endswith "\\powershell.exe" and (ProcessCommandLine contains "curl.exe" and ProcessCommandLine contains "IEX"))

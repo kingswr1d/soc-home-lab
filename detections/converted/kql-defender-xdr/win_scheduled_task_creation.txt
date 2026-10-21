@@ -1,0 +1,2 @@
+DeviceProcessEvents
+| where (FolderPath endswith "\\schtasks.exe" and ProcessCommandLine contains "/create") or (FolderPath endswith "\\mmc.exe" and ProcessCommandLine contains "taskschd.msc") or (FolderPath endswith "\\powershell.exe" and (ProcessCommandLine contains "Register-ScheduledTask" and ProcessCommandLine contains "-Action")) or FolderPath endswith "\\at.exe"

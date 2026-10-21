@@ -1,0 +1,3 @@
+| rex field=CommandLine "(?<CommandLineMatch>IEX\\s*\\(.*(DownloadString|DownloadFile|OpenRead))"
+| eval CommandLineCondition=if(isnotnull(CommandLineMatch), "true", "false")
+| search (Image="*\\powershell.exe" CommandLine="*Invoke-WebRequest*" CommandLine="*Invoke-Expression*") OR (Image="*\\powershell.exe" CommandLine="*Net.WebClient*" CommandLine="*DownloadString*") OR (Image="*\\powershell.exe" CommandLineCondition="true") OR (Image="*\\powershell.exe" CommandLine="*curl.exe*" CommandLine="*IEX*") | table EventCode,Image,CommandLine,ParentImage,User,ProcessId

@@ -1,0 +1,3 @@
+| rex field=ScriptBlockText "(?<ScriptBlockTextMatch>(?i)['\"]a['\"]\\s*\\+\\s*['\"]m['\"]\\s*\\+\\s*['\"]s['\"]\\s*\\+\\s*['\"]i['\"])"
+| eval ScriptBlockTextCondition=if(isnotnull(ScriptBlockTextMatch), "true", "false")
+| search source IN ("WinEventLog:Microsoft-Windows-PowerShell/Operational", "WinEventLog:PowerShellCore/Operational") (ScriptBlockText IN ("*amsiInitFailed*", "*amsiContext*") ScriptBlockText IN ("*SetValue(*", "*= $true*", "*=$true*", "*= $null*", "*=$null*")) OR (ScriptBlockText="*amsi.dll*" ScriptBlockText="*AmsiScanBuffer*" ScriptBlockText="*GetProcAddress*") OR ScriptBlockTextCondition="true"

@@ -1,0 +1,1 @@
+any where (process.executable.caseless:"*\\schtasks.exe" and process.command_line:"*/create*") or (process.executable.caseless:"*\\mmc.exe" and process.command_line:"*taskschd.msc*") or (process.executable.caseless:"*\\powershell.exe" and (process.command_line:"*Register-ScheduledTask*" and process.command_line:"*-Action*")) or process.executable.caseless:"*\\at.exe"

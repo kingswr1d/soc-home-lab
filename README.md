@@ -24,7 +24,10 @@ Most people trying to break into cybersecurity can talk about logs, but they've 
 - `scripts/tools/generate_sample_logs.py` — synthetic `auth.log` + Apache access log in the real formats
 - `scripts/tools/generate_sample_pcap.py` — synthetic pcap with a scan, a beacon and DNS tunneling
 - `install.sh` — one-command setup on Debian/Ubuntu: apt packages, a `.venv` with scapy, sample data
-- `detection/`, `detections/` — Sigma rules for Windows attacks, mapped to MITRE ATT&CK
+- `detections/` — 7 Sigma rules for Windows attacks (ATT&CK v20), tested against attack logs and benign controls, converted to Splunk / Elastic / Defender KQL. Checked in CI — see [detections/README.md](detections/README.md)
+- `detection/` — 3 earlier Sigma rules tested against Atomic Red Team commands, with an ATT&CK Navigator layer
+
+[![Sigma rules](https://github.com/kingswr1d/soc-home-lab/actions/workflows/sigma-ci.yml/badge.svg)](https://github.com/kingswr1d/soc-home-lab/actions/workflows/sigma-ci.yml)
 
 ## Output
 

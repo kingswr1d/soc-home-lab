@@ -1,0 +1,1 @@
+Image="*\\certutil.exe" CommandLine="*-urlcache*" CommandLine="*-split*" CommandLine="*-f*" | table EventCode,Image,CommandLine,ParentImage,User,ProcessId

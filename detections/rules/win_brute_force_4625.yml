@@ -1,18 +1,21 @@
-title: Windows Brute Force Logon Attempts (Event ID 4625)
-id: d1a2b3c4-e5f6-7890-abcd-ef1234567890
+title: Windows Failed Logon (Event ID 4625)
+id: 0680ddb7-60b7-43bf-8185-486b29c1bdd9
+name: win_failed_logon_4625
 status: test
-description: Detects multiple failed logon attempts (Event ID 4625) from the same source IP within a short time window, indicating password spraying or brute force attacks.
-author: SOC Lab Portfolio
+description: >
+  A single failed logon. Not an alert on its own: it is the building block
+  for the brute-force correlation rule in this file.
+author: Kgosi Ntshingila
 date: 2024-01-15
-modified: 2024-01-15
+modified: 2026-10-21
 tags:
-  - attack.credential_access
+  - attack.credential-access
   - attack.t1110.001
   - attack.t1110.003
 logsource:
   product: windows
-  category: security
-  definition: 'Requirements: Security Event Log (Event ID 4625) with Audit Failure logon type'
+  service: security
+  definition: 'Requirements: Audit Logon failure auditing enabled (Event ID 4625)'
 detection:
   selection:
     EventID: 4625
@@ -21,18 +24,41 @@ detection:
   filter_machine:
     TargetUserName|endswith: '$'
   condition: selection and not filter_anon and not filter_machine
-  timeframe: 5m
-  count: 10
 fields:
-  - EventID
   - TargetUserName
   - IpAddress
   - LogonType
   - WorkstationName
-  - ProcessName
 falsepositives:
-  - Legitimate user forgetting password
-  - Service account with expired password
+  - Users mistyping passwords
+level: informational
+---
+title: Windows Brute Force / Password Spraying - 10+ Failed Logons From One IP in 5 Minutes
+id: 450f0906-e112-401e-8ce0-130b3153cce2
+status: test
+description: >
+  Ten or more failed logons (Event ID 4625) from the same source IP within
+  five minutes. Many different usernames from one IP points to password
+  spraying (T1110.003); one username many times points to guessing (T1110.001).
+author: Kgosi Ntshingila
+date: 2024-01-15
+modified: 2026-10-21
+tags:
+  - attack.credential-access
+  - attack.t1110.001
+  - attack.t1110.003
+correlation:
+  type: event_count
+  rules:
+    - win_failed_logon_4625
+  group-by:
+    - IpAddress
+  timespan: 5m
+  condition:
+    gte: 10
+falsepositives:
+  - A service account with an expired password retrying from one host
+  - A misconfigured application or scanner on the internal network
 level: medium
 references:
   - https://attack.mitre.org/techniques/T1110/

@@ -1,0 +1,2 @@
+sequence by source.ip with maxspan=5m 
+ [any where winlog.channel:"Security" and (event.code:"4625" and (not winlog.event_data.TargetUserName:"ANONYMOUS LOGON") and (not winlog.event_data.TargetUserName:"*$"))]  with runs=10

@@ -1,5 +1,5 @@
 title: PowerShell Web Request / Download Cradle
-id: b5c6d7e8-f9a0-1234-5678-901234567890
+id: f2ec7e0b-dbf3-44d3-8103-13d5c32c091b
 status: test
 description: Detects PowerShell download cradles (Invoke-WebRequest, Invoke-Expression, Net.WebClient) used to download and execute payloads in memory.
 author: SOC Lab Portfolio
@@ -8,7 +8,7 @@ modified: 2024-01-15
 tags:
   - attack.execution
   - attack.t1059.001
-  - attack.command_and_control
+  - attack.command-and-control
   - attack.t1105
 logsource:
   product: windows

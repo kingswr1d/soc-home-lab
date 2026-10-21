@@ -1,15 +1,13 @@
 title: LOLBin Execution - Certutil Download
-id: a4b5c6d7-e8f9-0123-4567-890123456789
+id: 97a844b3-c5d0-4497-b101-3871d2f45328
 status: test
 description: Detects certutil.exe used to download files from the internet, a common LOLBin technique for defense evasion and command & control.
 author: SOC Lab Portfolio
 date: 2024-01-15
 modified: 2024-01-15
 tags:
-  - attack.defense_evasion
+  - attack.command-and-control
   - attack.t1105
-  - attack.command_and_control
-  - attack.t1059.001
 logsource:
   product: windows
   category: process_creation

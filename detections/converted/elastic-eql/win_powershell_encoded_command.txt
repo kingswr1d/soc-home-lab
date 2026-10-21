@@ -1,0 +1,1 @@
+any where (process.command_line like~ ("*-EncodedCommand*", "*-E *", "*-Enco*", "*-Encod*", "*-Encode*", "*-Encoded*", "*-EncodedC*", "*-EncodedCo*", "*-EncodedCom*", "*-EncodedCom*", "*-EncodedComm*", "*-EncodedComma*", "*-EncodedCommand*")) or process.command_line regex~ "(-e|-enc|-encodedcommand)\\s+[A-Za-z0-9+\/]{50,}={0,2}"

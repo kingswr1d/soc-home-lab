@@ -1,0 +1,54 @@
+name: Sigma rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'detections/**'
+      - 'detection/rules/**'
+      - '.github/workflows/sigma-ci.yml'
+  pull_request:
+    paths:
+      - 'detections/**'
+      - 'detection/rules/**'
+      - '.github/workflows/sigma-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  sigma:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: detections/requirements.txt
+
+      - name: Install sigma-cli and backends
+        run: pip install -r detections/requirements.txt
+
+      - name: Lint rules (sigma check)
+        # Fails on any rule error, condition error, or validation issue:
+        # bad ATT&CK tags, duplicate rule IDs, unused detections, ...
+        run: |
+          sigma check --fail-on-error --fail-on-issues detections/rules/ detection/rules/
+
+      - name: Test rules against attack logs and benign controls
+        run: python detections/tests/run_tests.py
+
+      - name: Convert to Splunk, Elastic EQL and Defender KQL
+        run: python detections/tests/convert_all.py
+
+      - name: Committed queries match the rules
+        run: |
+          git diff --exit-code -- detections/converted/ || {
+            echo "::error::detections/converted/ is out of date. Run: python detections/tests/convert_all.py and commit the result."
+            exit 1
+          }
+          untracked=$(git ls-files --others --exclude-standard detections/converted/)
+          if [ -n "$untracked" ]; then
+            echo "::error::New converted queries are not committed: $untracked"
+            exit 1
+          fi

@@ -1,0 +1,6 @@
+source="WinEventLog:Security" EventCode=4625 NOT TargetUserName="ANONYMOUS LOGON" NOT TargetUserName="*$"
+
+| bin _time span=5m
+| stats count as event_count by _time IpAddress
+
+| search event_count >= 10

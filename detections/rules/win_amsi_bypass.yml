@@ -1,51 +1,47 @@
-title: PowerShell AMSI Bypass via Reflection or .NET Assembly Manipulation
-id: e2b3c4d5-f6a7-8901-bcde-f23456789012
+title: PowerShell AMSI Bypass - Tampering With AmsiUtils Fields or Patching AmsiScanBuffer
+id: 003cef61-fc1a-4936-81f3-57e085ae2721
 status: test
-description: "Detects PowerShell AMSI (Antimalware Scan Interface) bypass attempts using reflection to modify internal AMSI fields (amsiInitFailed, amsiContext) or loading bypass assemblies. Covers common techniques: Set-Field on System.Management.Automation.AmsiUtils, [Ref].Assembly.GetType('System.Management.Automation.AmsiUtils'), and known bypass strings."
-author: SOC Lab
+description: >
+  Detects PowerShell that disables AMSI (Antimalware Scan Interface) rather
+  than just mentioning it. Three techniques: (1) writing to the internal
+  AmsiUtils fields amsiInitFailed / amsiContext, (2) loading amsi.dll and
+  resolving AmsiScanBuffer to patch it in memory, (3) building the string
+  "AMSI" from single characters to dodge string matching. A script that only
+  reads AMSI state is not flagged.
+author: Kgosi Ntshingila
 date: 2026-06-18
+modified: 2026-10-21
 tags:
-  - attack.t1562.001
-  - attack.defense_evasion
-  - detection.amsi
-  - detection.powershell
+  - attack.defense-impairment
+  - attack.t1685
 logsource:
   product: windows
   service: powershell
-  definition: "Requires: PowerShell Script Block Logging (Event ID 4104) enabled. Group Policy: Turn on PowerShell Script Block Logging."
+  definition: 'Requires: PowerShell Script Block Logging (Event ID 4104). Group Policy: Turn on PowerShell Script Block Logging.'
 detection:
-  selection_reflection_amsiutils:
+  amsi_field:
     ScriptBlockText|contains:
-      - "amsiUtils"
-      - "AmsiUtils"
-      - "amsiInitFailed"
-      - "amsiContext"
-  selection_reflection_assembly:
+      - 'amsiInitFailed'
+      - 'amsiContext'
+  field_write:
     ScriptBlockText|contains:
-      - "[Ref].Assembly.GetType"
-      - 'GetField("amsiInitFailed"'
-      - 'GetField("amsiContext"'
-      - "SetValue($null,$true)"
-      - "SetValue($null,1)"
-  selection_known_bypasses:
-    ScriptBlockText|contains:
-      - "AmsiScanBuffer"
-      - "AmsiOpenSession"
-      - "AmsiCloseSession"
-      - "amsi.dll"
-      - "System.Management.Automation.AmsiUtils"
-  selection_obfuscated_patterns:
-    ScriptBlockText|re: '(?i)(a\s*m\s*s\s*i|A\s*M\s*S\s*I).{0,10}(bypass|disable|initfailed|context)'
-  condition: 1 of selection_*
+      - 'SetValue('
+      - '= $true'
+      - '=$true'
+      - '= $null'
+      - '=$null'
+  selection_patch_scanbuffer:
+    ScriptBlockText|contains|all:
+      - 'amsi.dll'
+      - 'AmsiScanBuffer'
+      - 'GetProcAddress'
+  selection_split_string:
+    ScriptBlockText|re|i: "['\"]a['\"]\\s*\\+\\s*['\"]m['\"]\\s*\\+\\s*['\"]s['\"]\\s*\\+\\s*['\"]i['\"]"
+  condition: (amsi_field and field_write) or 1 of selection_*
 falsepositives:
-  - "Legitimate security research / red team tooling in controlled environments"
-  - "PowerShell scripts that legitimately inspect AMSI state (rare)"
-  - "Obfuscated legitimate scripts triggering pattern matching"
-level: critical
-mitre:
-  - T1562.001
+  - Red team or security research tooling run on purpose in a lab
+level: high
 references:
-  - https://attack.mitre.org/techniques/T1562/001/
-  - https://github.com/SigmaHQ/sigma/tree/master/rules/windows/powershell/powershell_classic_amsi_bypass.yml
-  - https://posts.specterops.io/amsi-bypass-powershell-5-0-7b2b3c1e8e5d
+  - https://attack.mitre.org/techniques/T1685/
+  - https://github.com/SigmaHQ/sigma/blob/master/rules/windows/powershell/powershell_script/posh_ps_amsi_bypass_pattern_nov22.yml
   - https://learn.microsoft.com/en-us/windows/win32/amsi/antimalware-scan-interface-portal

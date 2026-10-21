@@ -1,0 +1,1 @@
+any where process.executable.caseless:"*\\certutil.exe" and (process.command_line:"*-urlcache*" and process.command_line:"*-split*" and process.command_line:"*-f*")
