@@ -114,7 +114,7 @@ RECOMMENDATION: Block source IP at perimeter, rotate affected credentials, enfor
 - [ ] PortSwringer lab writeups added
 - [ ] TryHackMe SOC Level 1 completion certificate
 - [ ] CompTIA Security+ exam scheduled (5 November 2026)
-- [x] CompTIA CCNA exam passed (July 2026)
+- [ ] ISC2 CC exam (was scheduled for 31 July 2026)
 - [ ] AWS cloud practitioner exam scheduled
 
 ## Skills Demonstrated
