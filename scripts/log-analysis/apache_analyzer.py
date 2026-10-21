@@ -1,71 +1,115 @@
 #!/usr/bin/env python3
 """
-Apache Log Analyzer - SOC Lab Practice
-Analyzes access logs for suspicious patterns.
+Apache access-log analyzer (Common or Combined Log Format).
+
+Request paths are URL-decoded before matching, because attackers' payloads
+arrive encoded (e.g. %27 for ', %3Cscript%3E for <script>).
+
+Detects:
+  - SQL injection     (UNION SELECT, ' OR '1'='1, SLEEP(), information_schema, ...)
+  - XSS               (<script>, onerror=, onload=, javascript:)
+  - Path traversal    (../ and encoded variants, /etc/passwd)
+  - Recon / scanning  (.env, .git, wp-login, phpmyadmin, backups)
+  - Web shell use     (?cmd= / ?exec= on a .php/.jsp/.asp file)
+  - Known attack tools by User-Agent (sqlmap, nikto, nmap, ...)
+
+Usage:
+  python3 apache_analyzer.py /var/log/apache2/access.log
 """
 import re
-from collections import Counter
 import sys
+from collections import Counter, defaultdict
+from urllib.parse import unquote_plus
+
+LINE = re.compile(
+    r'^(?P<ip>\S+) \S+ \S+ \[(?P<time>[^\]]+)\] '
+    r'"(?P<method>[A-Z]+) (?P<path>.+?) (?P<proto>HTTP/[\d.]+)" '
+    r'(?P<status>\d{3}) (?P<size>\S+)'
+    r'(?: "(?P<ref>[^"]*)" "(?P<ua>[^"]*)")?'
+)
+
+RULES = {
+    "SQL injection": re.compile(
+        r"union(\s|/\*.*?\*/)+(all\s+)?select|'\s*or\s*'?\d*'?\s*=\s*'?\d|"
+        r"\bsleep\s*\(|benchmark\s*\(|information_schema|;\s*drop\s+table|'\s*--|"
+        r"\border\s+by\s+\d+--", re.I),
+    "XSS": re.compile(r"<\s*script|on(error|load|mouseover)\s*=|javascript:|<\s*svg|<\s*iframe", re.I),
+    "Path traversal": re.compile(r"\.\./|\.\.\\", re.I),
+    "Recon / scanning": re.compile(
+        r"/\.env$|/\.git/|wp-login\.php|xmlrpc\.php|phpmyadmin|/server-status|"
+        r"\.(bak|old|zip|tar\.gz|sql)$", re.I),
+    "Web shell": re.compile(r"\.(php|jsp|aspx?)\?.*\b(cmd|exec|command|shell)=", re.I),
+}
+TOOL_UA = re.compile(r"sqlmap|nikto|nmap|masscan|zgrab|gobuster|dirbuster|wpscan|nuclei|acunetix", re.I)
 
 
-def analyze_apache_logs(logfile):
-    print(f"[*] Analyzing: {logfile}")
+def analyze(logfile):
+    total = parsed = 0
+    ips, statuses = Counter(), Counter()
+    hits = defaultdict(Counter)       # rule -> ip -> count
+    examples = {}                     # rule -> first decoded example
+    tools = Counter()                 # (ip, tool) -> count
+    shell_cmds = []
 
-    pattern = re.compile(
-        r'(?P<ip>\S+) \S+ \S+ \[(?P<time>[^\]]+)\] '
-        r'"(?P<method>\S+) (?P<path>\S+) \S+" '
-        r'(?P<status>\d+) (?P<size>\S+)'
-    )
-
-    ip_counter = Counter()
-    status_counter = Counter()
-    sql_errors = 0
-    xss_attempts = 0
-    path_traversal = 0
-    shell_uploads = 0
-
-    with open(logfile, 'r', errors='ignore') as f:
-        for line in f:
-            match = pattern.match(line)
-            if not match:
+    with open(logfile, errors="ignore") as f:
+        for raw in f:
+            total += 1
+            m = LINE.match(raw)
+            if not m:
                 continue
+            parsed += 1
+            ip, status = m["ip"], int(m["status"])
+            path = unquote_plus(unquote_plus(m["path"]))   # double-decode catches %252e%252e
+            ips[ip] += 1
+            statuses[status] += 1
 
-            ip = match.group('ip')
-            status = int(match.group('status'))
-            path = match.group('path').lower()
+            for name, rx in RULES.items():
+                if rx.search(path):
+                    hits[name][ip] += 1
+                    examples.setdefault(name, (ip, status, path))
+            if m["ua"]:
+                t = TOOL_UA.search(m["ua"])
+                if t:
+                    tools[(ip, t.group(0).lower())] += 1
+            if RULES["Web shell"].search(path):
+                shell_cmds.append((m["time"], ip, status, path.split("=", 1)[1]))
 
-            ip_counter[ip] += 1
-            status_counter[status] += 1
+    print(f"[*] {logfile}: {total} lines, {parsed} parsed"
+          + (f", {total - parsed} unparsed" if total != parsed else "") + "\n")
+    print("=== APACHE ANALYSIS ===")
+    print(f"Requests:    {parsed}")
+    print(f"Unique IPs:  {len(ips)}")
+    print("Status:      " + "  ".join(f"{c}:{n}" for c, n in sorted(statuses.items())))
 
-            if any(x in path for x in ['union', 'select', 'drop', '--', "'"]):
-                sql_errors += 1
-            if any(x in path for x in ['<script>', 'javascript:', 'onerror=']):
-                xss_attempts += 1
-            if '../' in path:
-                path_traversal += 1
-            if any(x in path for x in ['.php', '.asp', '.jsp']) and 'upload' in path:
-                shell_uploads += 1
+    print("\nTop talkers:")
+    for ip, n in ips.most_common(5):
+        flags = [name for name in RULES if ip in hits[name]]
+        print(f"  {ip:16s} {n:5d}  {', '.join(flags) if flags else '-'}")
 
-    print("\n=== ANALYSIS RESULTS ===")
-    print(f"Total requests: {sum(ip_counter.values())}")
-    print(f"Unique IPs: {len(ip_counter)}")
-    print(f"\nTop 10 IPs by request count:")
-    for ip, count in ip_counter.most_common(10):
-        print(f"  {ip:20s} {count:6d}")
+    print("\n[!] Attack patterns (requests / source IPs):")
+    for name in RULES:
+        n = sum(hits[name].values())
+        print(f"  {name:17s} {n:4d} / {len(hits[name])}")
 
-    print(f"\nStatus code distribution:")
-    for code in sorted(status_counter.keys()):
-        print(f"  {code}: {status_counter[code]}")
+    if tools:
+        print("\n[!] Attack tools by User-Agent:")
+        for (ip, tool), n in tools.most_common():
+            print(f"  {ip:16s} {tool:8s} {n} requests")
 
-    print(f"\n[!] Suspicious patterns found:")
-    print(f"  SQL injection attempts: {sql_errors}")
-    print(f"  XSS attempts: {xss_attempts}")
-    print(f"  Path traversal: {path_traversal}")
-    print(f"  Shell upload attempts: {shell_uploads}")
+    if shell_cmds:
+        print(f"\n[!!] WEB SHELL ACTIVITY: {len(shell_cmds)} commands executed")
+        for t, ip, status, cmd in shell_cmds[:8]:
+            print(f"  {t}  {ip}  {status}  {cmd}")
+
+    print("\nFirst example per rule (decoded):")
+    for name, (ip, status, path) in examples.items():
+        print(f"  {name:17s} {ip} {status} {path[:70]}")
+
+    return 2 if shell_cmds else (1 if any(hits.values()) else 0)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: apache_analyzer.py <logfile>")
-        sys.exit(1)
-    analyze_apache_logs(sys.argv[1])
+    if len(sys.argv) != 2:
+        print("Usage: apache_analyzer.py <access.log>")
+        sys.exit(64)
+    sys.exit(analyze(sys.argv[1]))
