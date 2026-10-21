@@ -51,7 +51,7 @@ Successful logins after failures:
 ## 60-Second Setup
 
 ```bash
-git clone https://github.com/<your-username>/soc-lab-termux.git
+git clone https://github.com/kingswr1d/soc-lab-termux.git
 cd soc-lab-termux
 bash install.sh
 python3 scripts/tools/generate_sample_logs.py
@@ -113,8 +113,8 @@ RECOMMENDATION: Block source IP at perimeter, rotate affected credentials, enfor
 - [x] Packaged for Termux on Android
 - [ ] PortSwringer lab writeups added
 - [ ] TryHackMe SOC Level 1 completion certificate
-- [ ] CompTIA Security+ exam to be scheduled
-- [ ] CC exam on 31st July 2026
+- [ ] CompTIA Security+ exam scheduled (5 November 2026)
+- [x] CompTIA CCNA exam passed (July 2026)
 - [ ] AWS cloud practitioner exam scheduled
 
 ## Skills Demonstrated
