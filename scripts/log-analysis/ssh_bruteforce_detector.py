@@ -19,11 +19,19 @@ import re
 import sys
 from collections import Counter, defaultdict
 
-# "Oct 14 21:37:02 web01 sshd[4242]: ..."
-SYSLOG = re.compile(r'^(?P<ts>\w{3}\s+\d{1,2} \d{2}:\d{2}:\d{2}) (?P<host>\S+) sshd\[\d+\]: (?P<msg>.*)$')
+# "Oct 14 21:37:02 web01 sshd[4242]: ..."  (also sshd-session[...] on OpenSSH 9.8+,
+# and ISO timestamps from rsyslog's high-precision format / journalctl -o short-iso)
+SYSLOG = re.compile(r'^(?P<ts>\w{3}\s+\d{1,2} \d{2}:\d{2}:\d{2}|\d{4}-\d{2}-\d{2}T\S+) (?P<host>\S+) '
+                    r'sshd(?:-session)?\[\d+\]: (?P<msg>.*)$')
 FAILED = re.compile(r'Failed (?:password|publickey) for (?P<invalid>invalid user )?(?P<user>\S+) '
                     r'from (?P<ip>\S+) port \d+')
 ACCEPTED = re.compile(r'Accepted (?P<method>\S+) for (?P<user>\S+) from (?P<ip>\S+) port \d+')
+
+
+def clock(ts):
+    """Time-of-day part of a syslog ('Oct 14 21:37:02') or ISO timestamp."""
+    m = re.search(r"\d{2}:\d{2}:\d{2}", ts)
+    return m.group(0) if m else ts
 
 
 def is_internal(ip):
@@ -84,7 +92,7 @@ def analyze(logfile, threshold):
         top = ", ".join(u for u, _ in users_by_ip[ip].most_common(4))
         more = len(users_by_ip[ip]) - 4
         top += f" +{more} more" if more > 0 else ""
-        print(f"  {ip:16s} {n:5d} fails  {first_seen[ip]} -> {last_seen[ip][7:]}  users: {top}")
+        print(f"  {ip:16s} {n:5d} fails  {first_seen[ip]} -> {clock(last_seen[ip])}  users: {top}")
 
     below = [(ip, n) for ip, n in fails.items() if n < threshold]
     if below:

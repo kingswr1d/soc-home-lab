@@ -1,33 +1,44 @@
 #!/usr/bin/env bash
-# SOC Lab setup -- Termux (Android) or Debian/Ubuntu.
+# SOC home lab setup for a Linux desktop (Debian / Ubuntu / Kali / Mint).
 # Run from the repo root:  bash install.sh
+#
+# - installs the command-line tools the lab uses (asks for sudo once)
+# - creates a Python virtual environment in .venv with scapy
+# - generates the sample logs and pcap into ./logs
 set -e
 cd "$(dirname "$0")"
 
-echo "=== SOC Lab Setup ==="
+echo "=== SOC home lab setup ==="
 
-if command -v pkg >/dev/null 2>&1 && [ -n "$PREFIX" ]; then
-  echo "[1/4] Termux detected -- installing packages"
-  pkg update -y
-  pkg install -y python git curl jq tcpdump tshark nmap openssl dnsutils whois
+if command -v apt-get >/dev/null 2>&1; then
+  echo "[1/4] Installing system packages (sudo)"
+  sudo apt-get update -qq
+  sudo apt-get install -y python3 python3-venv python3-pip jq tcpdump tshark nmap whois dnsutils
 else
-  echo "[1/4] Not Termux -- skipping system packages."
-  echo "      On Debian/Ubuntu: sudo apt install python3-venv tshark tcpdump nmap jq"
+  echo "[1/4] No apt-get found -- install python3, python3-venv, jq, tshark, tcpdump, nmap yourself."
 fi
 
-echo "[2/4] Installing Python libraries (scapy for packet_inspector.py)"
-python3 -m pip install --upgrade scapy || echo "      scapy install failed; log analyzers still work (stdlib only)"
+echo "[2/4] Creating Python virtual environment in .venv"
+python3 -m venv .venv
+.venv/bin/pip install -q --upgrade pip
+.venv/bin/pip install -q scapy
 
 echo "[3/4] Generating sample logs + pcap into ./logs"
-python3 scripts/tools/generate_sample_logs.py
-python3 scripts/tools/generate_sample_pcap.py || echo "      (pcap skipped -- needs scapy)"
+.venv/bin/python scripts/tools/generate_sample_logs.py
+.venv/bin/python scripts/tools/generate_sample_pcap.py
 
 echo "[4/4] Smoke test"
-python3 scripts/log-analysis/ssh_bruteforce_detector.py logs/linux_auth.log >/dev/null || [ $? -le 2 ]
-python3 scripts/log-analysis/apache_analyzer.py logs/apache_access.log >/dev/null || [ $? -le 2 ]
+.venv/bin/python scripts/log-analysis/ssh_bruteforce_detector.py logs/linux_auth.log >/dev/null || [ $? -le 2 ]
+.venv/bin/python scripts/log-analysis/apache_analyzer.py logs/apache_access.log >/dev/null || [ $? -le 2 ]
+.venv/bin/python scripts/network-tools/packet_inspector.py logs/sample.pcap >/dev/null || [ $? -le 2 ]
 
 echo
-echo "Done. Try:"
-echo "  python3 scripts/log-analysis/ssh_bruteforce_detector.py logs/linux_auth.log"
-echo "  python3 scripts/log-analysis/apache_analyzer.py logs/apache_access.log"
-echo "  python3 scripts/network-tools/packet_inspector.py logs/sample.pcap"
+echo "Done. Activate the environment, then run the detectors:"
+echo "  source .venv/bin/activate"
+echo "  python scripts/log-analysis/ssh_bruteforce_detector.py logs/linux_auth.log"
+echo "  python scripts/log-analysis/apache_analyzer.py logs/apache_access.log"
+echo "  python scripts/network-tools/packet_inspector.py logs/sample.pcap"
+echo
+echo "On your own machine:"
+echo "  sudo .venv/bin/python scripts/log-analysis/ssh_bruteforce_detector.py /var/log/auth.log"
+echo "  sudo tcpdump -i any -w capture.pcap   # then run packet_inspector.py on it"

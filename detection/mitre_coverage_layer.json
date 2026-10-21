@@ -95,11 +95,11 @@
   "metadata": [
     {
       "name": "rules_directory",
-      "value": "/data/data/com.termux/files/home/soc-lab/detection/rules"
+      "value": "detection/rules"
     },
     {
       "name": "generator",
-      "value": "soc-lab/detection/scripts/coverage_map.py"
+      "value": "detection/scripts/coverage_map.py"
     }
   ],
   "showTacticRowBackground": true,

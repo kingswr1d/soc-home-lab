@@ -2,7 +2,7 @@
 """
 Sigma Rule Test Harness
 Validates Sigma rules against Atomic Red Team test commands using pattern matching.
-Note: Full sigma compilation requires a working sigma CLI (pyyaml 6+ compatibility issue on Termux).
+Note: this harness does pattern matching only; it does not compile rules with sigma-cli.
 In production, use 'sigmac -t <backend> rule.yml' to compile for your SIEM.
 """
 import os

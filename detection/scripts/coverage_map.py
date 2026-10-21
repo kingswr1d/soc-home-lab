@@ -121,8 +121,8 @@ def generate_layer(rules_dir: Path) -> Dict:
             {"label": "High coverage (3+ rules)", "color": "#ef5350"},
         ],
         "metadata": [
-            {"name": "rules_directory", "value": str(rules_dir)},
-            {"name": "generator", "value": "soc-lab/detection/scripts/coverage_map.py"},
+            {"name": "rules_directory", "value": str(rules_dir.relative_to(ROOT.parent))},
+            {"name": "generator", "value": "detection/scripts/coverage_map.py"},
         ],
         "showTacticRowBackground": True,
         "tacticRowBackground": "#fafafa",

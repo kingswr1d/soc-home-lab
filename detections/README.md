@@ -30,7 +30,7 @@ This repository demonstrates practical detection engineering skills by implement
 
 ## Quick Start
 
-### Local Validation (Termux / Linux / macOS)
+### Local Validation (Linux / macOS)
 
 ```bash
 # Install sigma-cli

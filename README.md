@@ -1,13 +1,13 @@
-[![SOC Lab Termux](https://img.shields.io/badge/SOC%20Lab-Termux%20%7C%20Android-blue?logo=Android)](https://github.com)
+[![Linux desktop](https://img.shields.io/badge/platform-Linux%20desktop-blue?logo=linux)](#setup)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-# SOC Lab Termux
-Android-based defensive security lab for SOC analyst practice. No cloud, no VPN, no root required.
+# SOC Home Lab
+A defensive security lab for SOC analyst practice that runs in a normal Linux desktop terminal (Ubuntu, Debian, Kali, Mint). No cloud account, no paid tools.
 
 ## What This Is
 
-A working cybersecurity home lab built for Android/Termux. It generates realistic synthetic attack logs, inspects network packets, and produces triage-ready reports — the same core tasks a SOC Tier 1 analyst performs daily.
+A working home lab that generates realistic attack logs and network captures, then detects the attacks in them. It covers the core Tier 1 SOC tasks: read the logs, find the attacker, decide what's a real compromise and what's noise. The same detectors also work on your own machine's `/var/log/auth.log` and on pcaps you capture with `tcpdump`.
 
 **Built by:** Kgosi Ntshingila
 **Purpose:** Demonstrate hands-on SOC skills without a university degree or expensive training labs.
@@ -23,11 +23,12 @@ Most people trying to break into cybersecurity can talk about logs, but they've 
 - `scripts/network-tools/packet_inspector.py` — pcap triage with scapy: port scans, DNS tunneling, C2 beaconing
 - `scripts/tools/generate_sample_logs.py` — synthetic `auth.log` + Apache access log in the real formats
 - `scripts/tools/generate_sample_pcap.py` — synthetic pcap with a scan, a beacon and DNS tunneling
-- `install.sh` — setup for Termux (also runs on Debian/Ubuntu)
+- `install.sh` — one-command setup on Debian/Ubuntu: apt packages, a `.venv` with scapy, sample data
+- `detection/`, `detections/` — Sigma rules for Windows attacks, mapped to MITRE ATT&CK
 
 ## Output
 
-Real runs against the sample data (`--seed 1014`), screenshotted from a terminal.
+Real runs against the sample data (`--seed 1014`) in xfce4-terminal on Ubuntu.
 
 **SSH brute force.** Two brute-force sources. One of them (`198.51.100.23`) gets into `admin` after 165 failures, and that's the only alert. An employee who mistyped his password twice is deliberately *not* flagged.
 
@@ -58,18 +59,35 @@ Pass `--seed N` to get the same dataset every time. Leave it out to get a new on
 
 ## Setup
 
-```bash
-git clone https://github.com/kingswr1d/soc-lab-termux.git
-cd soc-lab-termux
-bash install.sh          # installs scapy, generates logs/ and logs/sample.pcap
+Needs a Debian-based Linux desktop and Python 3.8+.
 
-python3 scripts/log-analysis/ssh_bruteforce_detector.py logs/linux_auth.log
-python3 scripts/log-analysis/apache_analyzer.py logs/apache_access.log
-python3 scripts/network-tools/packet_inspector.py logs/sample.pcap
+```bash
+git clone https://github.com/kingswr1d/soc-home-lab.git
+cd soc-home-lab
+bash install.sh               # apt packages, .venv with scapy, logs/ + logs/sample.pcap
+source .venv/bin/activate
+
+python scripts/log-analysis/ssh_bruteforce_detector.py logs/linux_auth.log
+python scripts/log-analysis/apache_analyzer.py logs/apache_access.log
+python scripts/network-tools/packet_inspector.py logs/sample.pcap
 ```
 
-The two log analyzers only use the standard library (Python 3.8+). `packet_inspector.py` needs `scapy`.
-All three work on real logs too, e.g. `sudo python3 scripts/log-analysis/ssh_bruteforce_detector.py /var/log/auth.log`.
+The two log analyzers only use the standard library. `packet_inspector.py` needs `scapy`, which `install.sh` puts in `.venv`.
+
+### On your own machine
+
+```bash
+# your real SSH log (Ubuntu/Debian; on Fedora/RHEL it's /var/log/secure)
+sudo .venv/bin/python scripts/log-analysis/ssh_bruteforce_detector.py /var/log/auth.log
+
+# on systemd-only distros with no auth.log
+journalctl -u ssh --no-pager -o short > ssh.log
+python scripts/log-analysis/ssh_bruteforce_detector.py ssh.log
+
+# capture 5 minutes of your own traffic, then triage it
+sudo timeout 300 tcpdump -i any -w capture.pcap
+python scripts/network-tools/packet_inspector.py capture.pcap
+```
 
 Exit codes are usable in scripts: `0` = nothing found, `1` = suspicious activity, `2` = likely compromise (success after brute force, or web-shell commands).
 
@@ -102,7 +120,7 @@ Exit codes are usable in scripts: `0` = nothing found, `1` = suspicious activity
 - [x] Brute-force detector
 - [x] Synthetic data generator
 - [x] Network packet inspector
-- [x] Packaged for Termux on Android
+- [x] One-command setup for a Linux desktop
 - [ ] PortSwigger lab writeups added
 - [ ] TryHackMe SOC Level 1 completion certificate
 - [ ] CompTIA Security+ exam scheduled (5 November 2026)
