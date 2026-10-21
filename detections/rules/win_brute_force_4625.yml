@@ -55,7 +55,7 @@ correlation:
     - IpAddress
   timespan: 5m
   condition:
-    gte: 10
+    gte: 11
 falsepositives:
   - A service account with an expired password retrying from one host
   - A misconfigured application or scanner on the internal network
