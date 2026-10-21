@@ -3,14 +3,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 # SOC Home Lab
-A defensive security lab for SOC analyst practice that runs in a normal Linux desktop terminal (Ubuntu, Debian, Kali, Mint). No cloud account, no paid tools.
+A defensive security lab for SOC analyst practice that runs in a normal Linux desktop terminal (Ubuntu, Debian, Kali, Mint).
 
 ## What This Is
 
 A working home lab that generates realistic attack logs and network captures, then detects the attacks in them. It covers the core Tier 1 SOC tasks: read the logs, find the attacker, decide what's a real compromise and what's noise. The same detectors also work on your own machine's `/var/log/auth.log` and on pcaps you capture with `tcpdump`.
 
 **Built by:** Kgosi Ntshingila
-**Purpose:** Demonstrate hands-on SOC skills without a university degree or expensive training labs.
+**Purpose:** Demonstrate hands-on SOC skills.
 
 ## Why This Exists
 
@@ -121,11 +121,6 @@ Exit codes are usable in scripts: `0` = nothing found, `1` = suspicious activity
 - [x] Synthetic data generator
 - [x] Network packet inspector
 - [x] One-command setup for a Linux desktop
-- [ ] PortSwigger lab writeups added
-- [ ] TryHackMe SOC Level 1 completion certificate
-- [ ] CompTIA Security+ exam scheduled (5 November 2026)
-- [ ] ISC2 CC exam (was scheduled for 31 July 2026)
-- [ ] AWS cloud practitioner exam scheduled
 
 ## Skills Demonstrated
 
@@ -136,13 +131,6 @@ Exit codes are usable in scripts: `0` = nothing found, `1` = suspicious activity
 - Defensive detection engineering
 - Technical documentation
 - Privacy/compliance framing (POPIA-ready SA context)
-
-## Roadmap for This Repo
-
-1. Add TryHackMe and PortSwigger lab writeups
-2. Add custom YARA rules for log-based detection
-3. Add a JSON alerting pipeline (script → jq filter → report)
-4. Add a small REST API wrapper around analyzers so they can be called remotely
 
 ## License
 
